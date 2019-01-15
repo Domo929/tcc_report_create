@@ -11,7 +11,7 @@ Provide the program with the `--default` flag. The program will look for files i
 ```
 Working_Folder/ (call script from here)
     PDF/
-        Coordination.pdf
+        Coordination*.pdf
     TCCs/
         TCC_Base_v*.pdf
         TCC_Rec_v*.pdf
@@ -35,3 +35,6 @@ If the file has a space in the name, wrap the entire path to the file in `" "`, 
 `--cord_path "C:/path/to/file with space.pdf"`
 
 You can use `/` instead of the normal windows separator `\ ` without issue.
+
+### Note: Coordination file name
+The Coordination file can be flagged with a 'CE' or 'RH' in the file name. Whichever name the file has, will be matched in the output file name. 

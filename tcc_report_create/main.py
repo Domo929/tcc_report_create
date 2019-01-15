@@ -63,9 +63,10 @@ else:
     # This allows us to find files that have different versions
     base_glob = 'TCC-Base_v*.pdf'
     rec_glob = 'TCC-Rec_v*.pdf'
+    cord_glob = '*Coordination*.pdf'
 
     # Build the full path in order to start searching
-    cord_path = os.path.join(cwd, 'PDF', 'Coordination.pdf')
+    cord_path = os.path.join(cwd, 'PDF', cord_glob)
     base_path = os.path.join(cwd, 'TCCs', base_glob)
     rec_path = os.path.join(cwd, 'TCCs', rec_glob)
 
@@ -95,6 +96,31 @@ else:
         exit()
     else:
         rec_path = rec_glob_list[0]
+
+    # Finally, the same checks happen for the coordination file
+    cord_glob_list = glob.glob(cord_path)
+    if len(cord_glob_list) > 1:
+        eprint('Found multiple versions of Coordination PDF. Please remove all extras')
+        exit()
+    elif len(cord_glob_list) == 0:
+        eprint('Found no version of Coordination PDF. Please provide a sheet')
+        exit()
+    else:
+        cord_path = cord_glob_list[0]
+
+# ######### PDF Output Name Checking ######### #
+# Empty string to hold it all
+output_name = ''
+# This splits the total file path into the list of drive, directory and at the end the file name
+paths = cord_path.split(os.sep)
+# Pull out the last entry in the list (the file name)
+filename = paths[len(paths) - 1]
+
+# Check to see if either is in the name, save for later
+if 'CE' in filename:
+    output_name = 'CE'
+elif 'RH' in filename:
+    output_name = 'RH'
 
 # ######### PDF Write Setup ######### #
 # Open the output file writer
@@ -134,5 +160,7 @@ for jj in range(base_in.getNumPages()):
     output.addPage(rec_in.getPage(jj))
 
 # Finally, output everything to the PDF
-with open("8.0 - Coordination Results & Recommendations_CE2018.pdf", "wb") as w:
+# The output name is chosen based on what the name of the coordination file is
+output_name = "8.0 - Coordination Results & Recommendations_" + output_name + "2018.pdf"
+with open(output_name, "wb") as w:
     output.write(w)
