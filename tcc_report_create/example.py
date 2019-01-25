@@ -1,6 +1,8 @@
-from PyPDF3 import PdfFileWriter, PdfFileReader
+#!/usr/bin/env python3
 import os
 from pathlib import Path
+
+from PyPDF3 import PdfFileWriter, PdfFileReader
 
 output = PdfFileWriter()
 
