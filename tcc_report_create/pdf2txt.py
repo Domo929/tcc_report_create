@@ -60,6 +60,7 @@ def extract_text(files=[], outfile='-',
     for fname in files:
         with open(fname, "rb") as fp:
             pdfminer3.high_level.extract_text_to_fp(fp, **locals())
+
     return outfp
 
 
