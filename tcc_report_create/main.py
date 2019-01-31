@@ -9,6 +9,8 @@ import sys
 
 from PyPDF3 import PdfFileWriter, PdfFileReader
 
+from tcc_report_create.helpers import *
+
 
 # ######### ERROR HElPER ######### #
 def eprint(*args, **kwargs):
@@ -32,6 +34,9 @@ parser.add_argument('--rec_path',
                     action='store',
                     help='The path to the Recommended TCC PDF',
                     type=str)
+parser.add_argument('--matching',
+                    action='store_true',
+                    help='Whether or not to trigger the TCC name matching method of combining')
 # Store the arguments in a dict for easy reference later
 opts = vars(parser.parse_args())
 
@@ -41,6 +46,9 @@ cord_path = ''
 base_path = ''
 rec_path = ''
 
+recc_glob_list = []
+recc_pdf_exists = False
+
 # If the default flag was not selected
 if not opts['default']:
     # Fill the paths. If they weren't provided they will be null
@@ -49,7 +57,7 @@ if not opts['default']:
     rec_path = opts['rec_path']
 
     # Check that if default was NOT selected, we are provided with the proper file flags
-    if not (cord_path and base_path and rec_path):
+    if not (cord_path and base_path):
         eprint('Didn\'t specify default, but also didn\'t give all the individual flags',
                'Either provide all three "--EXMP_path" flags OR the "--default" flag')
         exit()
@@ -86,16 +94,18 @@ else:
     else:
         base_path = base_glob_list[0]
 
-    # The same checks for the base file happen for the reccomended file
-    rec_glob_list = glob.glob(rec_path)
-    if len(rec_glob_list) > 1:
-        eprint('Found multiple versions of TCC_Rec. Please remove all extras')
-        exit()
-    elif len(rec_glob_list) == 0:
-        eprint('Found no version of TCC_rec. Please provide a sheet')
-        exit()
-    else:
-        rec_path = rec_glob_list[0]
+    # The same checks for the base file happen for the recommended file
+    recc_glob_list = glob.glob(rec_path)
+    recc_pdf_exists = len(recc_glob_list) > 0
+    if recc_pdf_exists:
+        if len(recc_glob_list) > 1:
+            eprint('Found multiple versions of TCC_Rec. Please remove all extras')
+            exit()
+        elif len(recc_glob_list) == 0:
+            eprint('Found no version of TCC_rec. Please provide a sheet')
+            exit()
+        else:
+            rec_path = recc_glob_list[0]
 
     # Finally, the same checks happen for the coordination file
     cord_glob_list = glob.glob(cord_path)
@@ -121,43 +131,70 @@ if 'CE' in filename:
     output_name = 'CE'
 elif 'RH' in filename:
     output_name = 'RH'
+else:
+    output_name = ''
 
 # ######### PDF Write Setup ######### #
 # Open the output file writer
 output = PdfFileWriter()
 
 # Open the input PDFs
-cord_in = PdfFileReader(open(cord_path, 'rb'), False)
-base_in = PdfFileReader(open(base_path, 'rb'), False)
-rec_in = PdfFileReader(open(rec_path, 'rb'), False)
+cord_pdf = PdfFileReader(open(cord_path, 'rb'), False)
+base_pdf = PdfFileReader(open(base_path, 'rb'), False)
+recc_pdf = ''
+if recc_pdf_exists:
+    recc_pdf = PdfFileReader(open(rec_path, 'rb'), False)
 
 # Check that the same number of pages exist in the Base and Recommended PDFs.
 # They should be the same length
-if base_in.getNumPages() != rec_in.getNumPages():
-    eprint('Number of pages does not match in the Base and Recommended PDFs')
-    exit()
+if recc_pdf_exists:
+    if base_pdf.getNumPages() != recc_pdf.getNumPages():
+        eprint('Number of pages does not match in the Base and Recommended PDFs')
+        exit()
 
 # Check that the coordination PDF is longer than the base (and therefore recc) pdf too.
 # The Coordination PDF includes pages at the front that do not get sliced in, and instead actually sit
 # in the front. If the Coordination pdf is less than the Base or Recc, these are missing, or there was another error
-if cord_in.getNumPages() < base_in.getNumPages():
+if cord_pdf.getNumPages() < base_pdf.getNumPages():
     eprint('Coordination PDF is shorter than the Base/Recc PDFs')
     exit()
 
+print("Converting Coordination PDF to string")
+cord_str_pages = pdf_pages_to_list_of_strings(cord_path)
+
+print("Converting Base PDF to string")
+base_str_pages = pdf_pages_to_list_of_strings(base_path)
+
+recc_str_pages = []
+if recc_pdf_exists:
+    print("Converting Recommended PDF to string")
+    recc_str_pages = pdf_pages_to_list_of_strings(rec_path)
+
 # ######### ZIPPING ######### #
 # Find the difference in length of the PDFs, these are the leader pages of the coordination
-diff_length = cord_in.getNumPages() - base_in.getNumPages()
+diff_length = cord_pdf.getNumPages() - base_pdf.getNumPages()
 
-# Add the first pages from the coordination PDF to the output PDF
-for ii in range(diff_length):
-    output.addPage(cord_in.getPage(ii))
+# regex_cord = re.compile(r"\bTCC_\*")
+regex_cord = r"(TCC Curve: )(TCC_[\w/ \[\]\"-]+)"
+regex_base_recc = r"(TCC Name: )(TCC_[\w/ \[\]\"-]+)"
 
-# Now we go through and 'zip' the files together. Note that the Coordination PDF has the diff_length
-# offset added to it to account for the starting pages. Everything else is just the actual indices
-for jj in range(base_in.getNumPages()):
-    output.addPage(cord_in.getPage(jj + diff_length))
-    output.addPage(base_in.getPage(jj))
-    output.addPage(rec_in.getPage(jj))
+for ii in range(diff_length, len(cord_str_pages)):
+    output.addPage(cord_pdf.getPage(ii))
+    matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
+    for match_num, match in enumerate(matches, start=1):
+        recc_num = 0
+        if recc_pdf_exists:
+            recc_num = find_matching_page(match.group(2), recc_str_pages, regex_base_recc)
+        print("Attempting to find: " + match.group(2))
+        base_num = find_matching_page(match.group(2), base_str_pages, regex_base_recc)
+        print("Found on base page: " + str(base_num))
+        if base_num > 0:
+            output.addPage(base_pdf.getPage(base_num))
+            if recc_num > 0:
+                print("Found on recc page: " + str(recc_num))
+                output.addPage(recc_pdf.getPage(recc_num))
+            break
+
 
 # Finally, output everything to the PDF
 # The output name is chosen based on what the name of the coordination file is
