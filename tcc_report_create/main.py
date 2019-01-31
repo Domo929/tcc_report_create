@@ -19,22 +19,22 @@ def eprint(*args, **kwargs):
 
 # ######### ARGUMENT HANDLER ######### #
 parser = argparse.ArgumentParser(description='Create TCC Reports correctly.')
-parser.add_argument('--default',
+parser.add_argument('-d', '--default',
                     action='store_true',
                     help='Set this to find the files via file path, instead of flagging each individually')
-parser.add_argument('--cord_path',
+parser.add_argument('-c', '--cord_path',
                     action='store',
                     help='The path to the Coordination PDF',
                     type=str)
-parser.add_argument('--base_path',
+parser.add_argument('-b', '--base_path',
                     action='store',
                     help='The path to the Base TCC PDF',
                     type=str)
-parser.add_argument('--rec_path',
+parser.add_argument('-r', '--rec_path',
                     action='store',
                     help='The path to the Recommended TCC PDF',
                     type=str)
-parser.add_argument('--matching',
+parser.add_argument('-m', '--matching',
                     action='store_true',
                     help='Whether or not to trigger the TCC name matching method of combining')
 # Store the arguments in a dict for easy reference later
@@ -135,9 +135,6 @@ else:
     output_name = ''
 
 # ######### PDF Write Setup ######### #
-# Open the output file writer
-output = PdfFileWriter()
-
 # Open the input PDFs
 cord_pdf = PdfFileReader(open(cord_path, 'rb'), False)
 base_pdf = PdfFileReader(open(base_path, 'rb'), False)
@@ -159,42 +156,52 @@ if cord_pdf.getNumPages() < base_pdf.getNumPages():
     eprint('Coordination PDF is shorter than the Base/Recc PDFs')
     exit()
 
-print("Converting Coordination PDF to string")
-cord_str_pages = pdf_pages_to_list_of_strings(cord_path)
-
-print("Converting Base PDF to string")
-base_str_pages = pdf_pages_to_list_of_strings(base_path)
-
-recc_str_pages = []
-if recc_pdf_exists:
-    print("Converting Recommended PDF to string")
-    recc_str_pages = pdf_pages_to_list_of_strings(rec_path)
-
-# ######### ZIPPING ######### #
 # Find the difference in length of the PDFs, these are the leader pages of the coordination
 diff_length = cord_pdf.getNumPages() - base_pdf.getNumPages()
 
-# regex_cord = re.compile(r"\bTCC_\*")
-regex_cord = r"(TCC Curve: )(TCC_[\w/ \[\]\"-]+)"
-regex_base_recc = r"(TCC Name: )(TCC_[\w/ \[\]\"-]+)"
+# ######### ZIPPING ######### #
 
-for ii in range(diff_length, len(cord_str_pages)):
-    output.addPage(cord_pdf.getPage(ii))
-    matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
-    for match_num, match in enumerate(matches, start=1):
-        recc_num = 0
+# Open the output file writer
+output = PdfFileWriter()
+
+if opts['matching']:
+    print("Converting Coordination PDF to string")
+    cord_str_pages = pdf_pages_to_list_of_strings(cord_path)
+
+    print("Converting Base PDF to string")
+    base_str_pages = pdf_pages_to_list_of_strings(base_path)
+
+    recc_str_pages = []
+    if recc_pdf_exists:
+        print("Converting Recommended PDF to string")
+        recc_str_pages = pdf_pages_to_list_of_strings(rec_path)
+
+    # regex_cord = re.compile(r"\bTCC_\*")
+    regex_cord = r"(TCC Curve: )(TCC_[\w/ \[\]\"-]+)"
+    regex_base_recc = r"(TCC Name: )(TCC_[\w/ \[\]\"-]+)"
+
+    for ii in range(diff_length, len(cord_str_pages)):
+        output.addPage(cord_pdf.getPage(ii))
+        matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
+        for match_num, match in enumerate(matches, start=1):
+            recc_num = 0
+            if recc_pdf_exists:
+                recc_num = find_matching_page(match.group(2), recc_str_pages, regex_base_recc)
+            print("Attempting to find: " + match.group(2))
+            base_num = find_matching_page(match.group(2), base_str_pages, regex_base_recc)
+            print("Found on base page: " + str(base_num))
+            if base_num > 0:
+                output.addPage(base_pdf.getPage(base_num))
+                if recc_num > 0:
+                    print("Found on recc page: " + str(recc_num))
+                    output.addPage(recc_pdf.getPage(recc_num))
+                break
+else:
+    for jj in range(base_pdf.getNumPages()):
+        output.addPage(cord_pdf.getPage(jj + diff_length))
+        output.addPage(base_pdf.getPage(jj))
         if recc_pdf_exists:
-            recc_num = find_matching_page(match.group(2), recc_str_pages, regex_base_recc)
-        print("Attempting to find: " + match.group(2))
-        base_num = find_matching_page(match.group(2), base_str_pages, regex_base_recc)
-        print("Found on base page: " + str(base_num))
-        if base_num > 0:
-            output.addPage(base_pdf.getPage(base_num))
-            if recc_num > 0:
-                print("Found on recc page: " + str(recc_num))
-                output.addPage(recc_pdf.getPage(recc_num))
-            break
-
+            output.addPage(recc_pdf.getPage(jj))
 
 # Finally, output everything to the PDF
 # The output name is chosen based on what the name of the coordination file is
