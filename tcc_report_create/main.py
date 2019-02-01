@@ -7,7 +7,9 @@ import glob
 import os
 import re
 import sys
+import tkinter as tk
 from io import StringIO
+from tkinter import filedialog, messagebox
 
 from PyPDF3 import PdfFileWriter, PdfFileReader
 from pdfminer3.converter import TextConverter
@@ -78,7 +80,7 @@ parser.add_argument('-b', '--base_path',
                     action='store',
                     help='The path to the Base TCC PDF',
                     type=str)
-parser.add_argument('-r', '--rec_path',
+parser.add_argument('-r', '--recc_path',
                     action='store',
                     help='The path to the Recommended TCC PDF',
                     type=str)
@@ -92,9 +94,12 @@ opts = vars(parser.parse_args())
 # Empty paths to be filled depending on the mode chosen (default or otherwise)
 cord_path = ''
 base_path = ''
-rec_path = ''
+recc_path = ''
 
+# Empty lists to reference later
+cord_glob_list = []
 recc_glob_list = []
+base_glob_list = []
 recc_pdf_exists = False
 
 # If the default flag was not selected
@@ -102,7 +107,7 @@ if not opts['default']:
     # Fill the paths. If they weren't provided they will be null
     cord_path = opts['cord_path']
     base_path = opts['base_path']
-    rec_path = opts['rec_path']
+    recc_path = opts['recc_path']
 
     # Check that if default was NOT selected, we are provided with the proper file flags
     if not (cord_path and base_path):
@@ -124,47 +129,81 @@ else:
     # Build the full path in order to start searching
     cord_path = os.path.join(cwd, 'PDF', cord_glob)
     base_path = os.path.join(cwd, 'TCCs', base_glob)
-    rec_path = os.path.join(cwd, 'TCCs', rec_glob)
+    recc_path = os.path.join(cwd, 'TCCs', rec_glob)
 
     # Build the list of all possible matches to the glob
     base_glob_list = glob.glob(base_path)
-
-    # If there is more than one, ask them to remove the extra
-    # TODO Load a file browser and ask the user to choose which one
-    if len(base_glob_list) > 1:
-        eprint('Found multiple versions of TCC_Base. Please remove all extras')
-        exit()
-    # If there aren't any files in the folder, throw error
-    # TODO Load a file browser and ask the user to choose where the file is
-    elif len(base_glob_list) == 0:
-        eprint('Found no version of TCC_base. Please provide a sheet')
-        exit()
-    else:
-        base_path = base_glob_list[0]
-
-    # The same checks for the base file happen for the recommended file
-    recc_glob_list = glob.glob(rec_path)
-    recc_pdf_exists = len(recc_glob_list) > 0
-    if recc_pdf_exists:
-        if len(recc_glob_list) > 1:
-            eprint('Found multiple versions of TCC_Rec. Please remove all extras')
-            exit()
-        elif len(recc_glob_list) == 0:
-            eprint('Found no version of TCC_rec. Please provide a sheet')
-            exit()
-        else:
-            rec_path = recc_glob_list[0]
-
-    # Finally, the same checks happen for the coordination file
+    recc_glob_list = glob.glob(recc_path)
     cord_glob_list = glob.glob(cord_path)
-    if len(cord_glob_list) > 1:
-        eprint('Found multiple versions of Coordination PDF. Please remove all extras')
-        exit()
-    elif len(cord_glob_list) == 0:
-        eprint('Found no version of Coordination PDF. Please provide a sheet')
-        exit()
+
+    recc_pdf_exists = len(recc_glob_list) > 0
+
+# If there is more than one, ask them to remove the extra
+if len(base_glob_list) > 1:
+
+    root = tk.Tk()
+    root.withdraw()
+
+    base_path = filedialog.askopenfilename(title='Choose preferred Base TCC File')
+    if base_path == '':
+        eprint('Did not provide a path for Base')
+        exit(-1)
+# If there aren't any files in the folder, throw error
+elif len(base_glob_list) == 0:
+    root = tk.Tk()
+    root.withdraw()
+
+    base_path = filedialog.askopenfilename(title='Please find and select preferred Base TCC File')
+    if base_path == '':
+        eprint('Did not provide a file for Base')
+        exit(-2)
+else:
+    base_path = base_glob_list[0]
+
+if not recc_pdf_exists:
+    recc_pdf_exists = messagebox.askyesno('Recommended TCC?',
+                                          'Is there a missing Recommended TCC you would like to use?')
+
+if recc_pdf_exists:
+    if len(recc_glob_list) > 1:
+        root = tk.Tk()
+        root.withdraw()
+
+        recc_path = filedialog.askopenfilename(title='Choose preferred Recc TCC File')
+        if recc_path == '':
+            eprint('Did not provide a path for Base')
+            exit(-3)
+    elif len(recc_glob_list) == 0:
+        root = tk.Tk()
+        root.withdraw()
+
+        recc_path = filedialog.askopenfilename(title='Choose preferred Recc TCC File')
+        if recc_path == '':
+            eprint('Did not provide a path for Base')
+            exit(-4)
     else:
-        cord_path = cord_glob_list[0]
+        recc_path = recc_glob_list[0]
+
+# Finally, the same checks happen for the coordination file
+
+if len(cord_glob_list) > 1:
+    root = tk.Tk()
+    root.withdraw()
+
+    cord_path = filedialog.askopenfilename(title='Choose preferred Coordination File')
+    if cord_path == '':
+        eprint('Did not provide a path for Coordination')
+        exit(-5)
+elif len(cord_glob_list) == 0:
+    root = tk.Tk()
+    root.withdraw()
+
+    cord_path = filedialog.askopenfilename(title='Choose preferred Coordination File')
+    if cord_path == '':
+        eprint('Did not provide a path for Coordination')
+        exit(-6)
+else:
+    cord_path = cord_glob_list[0]
 
 # ######### PDF Output Name Checking ######### #
 # Empty string to hold it all
@@ -188,7 +227,7 @@ cord_pdf = PdfFileReader(open(cord_path, 'rb'), False)
 base_pdf = PdfFileReader(open(base_path, 'rb'), False)
 recc_pdf = ''
 if recc_pdf_exists:
-    recc_pdf = PdfFileReader(open(rec_path, 'rb'), False)
+    recc_pdf = PdfFileReader(open(recc_path, 'rb'), False)
 
 # Check that the same number of pages exist in the Base and Recommended PDFs.
 # They should be the same length
@@ -222,7 +261,7 @@ if opts['matching']:
     recc_str_pages = []
     if recc_pdf_exists:
         print("Converting Recommended PDF to string")
-        recc_str_pages = pdf_pages_to_list_of_strings(rec_path)
+        recc_str_pages = pdf_pages_to_list_of_strings(recc_path)
 
     # regex_cord = re.compile(r"\bTCC_\*")
     regex_cord = r"(TCC Curve: )(TCC_[\w/ \[\]\"-]+)"
