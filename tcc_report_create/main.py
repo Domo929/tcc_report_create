@@ -80,7 +80,7 @@ parser.add_argument('-b', '--base_path',
                     action='store',
                     help='The path to the Base TCC PDF',
                     type=str)
-parser.add_argument('-r', '--recc_path',
+parser.add_argument('-r', '--rec_path',
                     action='store',
                     help='The path to the Recommended TCC PDF',
                     type=str)
@@ -94,20 +94,20 @@ opts = vars(parser.parse_args())
 # Empty paths to be filled depending on the mode chosen (default or otherwise)
 cord_path = ''
 base_path = ''
-recc_path = ''
+rec_path = ''
 
 # Empty lists to reference later
 cord_glob_list = []
-recc_glob_list = []
+rec_glob_list = []
 base_glob_list = []
-recc_pdf_exists = False
+rec_pdf_exists = False
 
 # If the default flag was not selected
 if not opts['default']:
     # Fill the paths. If they weren't provided they will be null
     cord_path = opts['cord_path']
     base_path = opts['base_path']
-    recc_path = opts['recc_path']
+    rec_path = opts['rec_path']
 
     # Check that if default was NOT selected, we are provided with the proper file flags
     if not (cord_path and base_path):
@@ -129,14 +129,14 @@ else:
     # Build the full path in order to start searching
     cord_path = os.path.join(cwd, 'PDF', cord_glob)
     base_path = os.path.join(cwd, 'TCCs', base_glob)
-    recc_path = os.path.join(cwd, 'TCCs', rec_glob)
+    rec_path = os.path.join(cwd, 'TCCs', rec_glob)
 
     # Build the list of all possible matches to the glob
     base_glob_list = glob.glob(base_path)
-    recc_glob_list = glob.glob(recc_path)
+    rec_glob_list = glob.glob(rec_path)
     cord_glob_list = glob.glob(cord_path)
 
-    recc_pdf_exists = len(recc_glob_list) > 0
+    rec_pdf_exists = len(rec_glob_list) > 0
 
 # If there is more than one, ask them to remove the extra
 if len(base_glob_list) > 1 and opts['default']:
@@ -160,29 +160,29 @@ elif len(base_glob_list) == 0 and opts['default']:
 elif opts['default']:
     base_path = base_glob_list[0]
 
-if not recc_pdf_exists:
-    recc_pdf_exists = messagebox.askyesno('Recommended TCC?',
-                                          'Is there a missing Recommended TCC you would like to use?')
+if not rec_pdf_exists:
+    rec_pdf_exists = messagebox.askyesno('Recommended TCC?',
+                                         'Is there a missing Recommended TCC you would like to use?')
 
-if recc_pdf_exists:
-    if len(recc_glob_list) > 1 and opts['default']:
+if rec_pdf_exists:
+    if len(rec_glob_list) > 1 and opts['default']:
         root = tk.Tk()
         root.withdraw()
 
-        recc_path = filedialog.askopenfilename(title='Choose preferred Recc TCC File')
-        if recc_path == '':
+        rec_path = filedialog.askopenfilename(title='Choose preferred Rec TCC File')
+        if rec_path == '':
             eprint('Did not provide a path for Base')
             exit(-3)
-    elif len(recc_glob_list) == 0 and opts['default']:
+    elif len(rec_glob_list) == 0 and opts['default']:
         root = tk.Tk()
         root.withdraw()
 
-        recc_path = filedialog.askopenfilename(title='Choose preferred Recc TCC File')
-        if recc_path == '':
+        rec_path = filedialog.askopenfilename(title='Choose preferred Rec TCC File')
+        if rec_path == '':
             eprint('Did not provide a path for Base')
             exit(-4)
     elif opts['default']:
-        recc_path = recc_glob_list[0]
+        rec_path = rec_glob_list[0]
 
 # Finally, the same checks happen for the coordination file
 
@@ -225,22 +225,22 @@ else:
 # Open the input PDFs
 cord_pdf = PdfFileReader(open(cord_path, 'rb'), False)
 base_pdf = PdfFileReader(open(base_path, 'rb'), False)
-recc_pdf = ''
-if recc_pdf_exists:
-    recc_pdf = PdfFileReader(open(recc_path, 'rb'), False)
+rec_pdf = ''
+if rec_pdf_exists:
+    rec_pdf = PdfFileReader(open(rec_path, 'rb'), False)
 
 # Check that the same number of pages exist in the Base and Recommended PDFs.
 # They should be the same length
-if recc_pdf_exists:
-    if base_pdf.getNumPages() != recc_pdf.getNumPages():
+if rec_pdf_exists:
+    if base_pdf.getNumPages() != rec_pdf.getNumPages():
         eprint('Number of pages does not tcc_matches in the Base and Recommended PDFs')
         exit()
 
-# Check that the coordination PDF is longer than the base (and therefore recc) pdf too.
+# Check that the coordination PDF is longer than the base (and therefore rec) pdf too.
 # The Coordination PDF includes pages at the front that do not get sliced in, and instead actually sit
-# in the front. If the Coordination pdf is less than the Base or Recc, these are missing, or there was another error
+# in the front. If the Coordination pdf is less than the Base or Rec, these are missing, or there was another error
 if cord_pdf.getNumPages() < base_pdf.getNumPages():
-    eprint('Coordination PDF is shorter than the Base/Recc PDFs')
+    eprint('Coordination PDF is shorter than the Base/Rec PDFs')
     exit(-7)
 
 # Find the difference in length of the PDFs, these are the leader pages of the coordination
@@ -258,37 +258,37 @@ if opts['matching']:
     print("Converting Base PDF to string")
     base_str_pages = pdf_pages_to_list_of_strings(base_path)
 
-    recc_str_pages = []
-    if recc_pdf_exists:
+    rec_str_pages = []
+    if rec_pdf_exists:
         print("Converting Recommended PDF to string")
-        recc_str_pages = pdf_pages_to_list_of_strings(recc_path)
+        rec_str_pages = pdf_pages_to_list_of_strings(rec_path)
 
     # regex_cord = re.compile(r"\bTCC_\*")
     regex_cord = r"(TCC Curve: )(TCC_[\w/ \[\]\"-]+)"
-    regex_base_recc = r"(TCC Name: )(TCC_[\w/ \[\]\"-]+)"
+    regex_base_rec = r"(TCC Name: )(TCC_[\w/ \[\]\"-]+)"
 
     for ii in range(diff_length, len(cord_str_pages)):
         output.addPage(cord_pdf.getPage(ii))
         tcc_matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
         for match_num, tcc_match in enumerate(tcc_matches, start=1):
-            recc_num = 0
-            if recc_pdf_exists:
-                recc_num = find_matching_page(tcc_match.group(2), recc_str_pages, regex_base_recc)
+            rec_num = 0
+            if rec_pdf_exists:
+                rec_num = find_matching_page(tcc_match.group(2), rec_str_pages, regex_base_rec)
             print("Attempting to find: " + tcc_match.group(2))
-            base_num = find_matching_page(tcc_match.group(2), base_str_pages, regex_base_recc)
+            base_num = find_matching_page(tcc_match.group(2), base_str_pages, regex_base_rec)
             print("Found on base page: " + str(base_num))
             if base_num > 0:
                 output.addPage(base_pdf.getPage(base_num))
-                if recc_num > 0:
-                    print("Found on recc page: " + str(recc_num))
-                    output.addPage(recc_pdf.getPage(recc_num))
+                if rec_num > 0:
+                    print("Found on rec page: " + str(rec_num))
+                    output.addPage(rec_pdf.getPage(rec_num))
                 break
 else:
     for jj in range(base_pdf.getNumPages()):
         output.addPage(cord_pdf.getPage(jj + diff_length))
         output.addPage(base_pdf.getPage(jj))
-        if recc_pdf_exists:
-            output.addPage(recc_pdf.getPage(jj))
+        if rec_pdf_exists:
+            output.addPage(rec_pdf.getPage(jj))
 
 # Finally, output everything to the PDF
 # The output name is chosen based on what the name of the coordination file is
