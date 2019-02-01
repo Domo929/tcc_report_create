@@ -108,6 +108,7 @@ if not opts['default']:
     cord_path = opts['cord_path']
     base_path = opts['base_path']
     rec_path = opts['rec_path']
+    rec_pdf_exists = True
 
     # Check that if default was NOT selected, we are provided with the proper file flags
     if not (cord_path and base_path):
