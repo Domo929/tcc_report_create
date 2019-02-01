@@ -139,7 +139,7 @@ else:
     recc_pdf_exists = len(recc_glob_list) > 0
 
 # If there is more than one, ask them to remove the extra
-if len(base_glob_list) > 1:
+if len(base_glob_list) > 1 and opts['default']:
 
     root = tk.Tk()
     root.withdraw()
@@ -149,7 +149,7 @@ if len(base_glob_list) > 1:
         eprint('Did not provide a path for Base')
         exit(-1)
 # If there aren't any files in the folder, throw error
-elif len(base_glob_list) == 0:
+elif len(base_glob_list) == 0 and opts['default']:
     root = tk.Tk()
     root.withdraw()
 
@@ -157,7 +157,7 @@ elif len(base_glob_list) == 0:
     if base_path == '':
         eprint('Did not provide a file for Base')
         exit(-2)
-else:
+elif opts['default']:
     base_path = base_glob_list[0]
 
 if not recc_pdf_exists:
@@ -165,7 +165,7 @@ if not recc_pdf_exists:
                                           'Is there a missing Recommended TCC you would like to use?')
 
 if recc_pdf_exists:
-    if len(recc_glob_list) > 1:
+    if len(recc_glob_list) > 1 and opts['default']:
         root = tk.Tk()
         root.withdraw()
 
@@ -173,7 +173,7 @@ if recc_pdf_exists:
         if recc_path == '':
             eprint('Did not provide a path for Base')
             exit(-3)
-    elif len(recc_glob_list) == 0:
+    elif len(recc_glob_list) == 0 and opts['default']:
         root = tk.Tk()
         root.withdraw()
 
@@ -181,12 +181,12 @@ if recc_pdf_exists:
         if recc_path == '':
             eprint('Did not provide a path for Base')
             exit(-4)
-    else:
+    elif opts['default']:
         recc_path = recc_glob_list[0]
 
 # Finally, the same checks happen for the coordination file
 
-if len(cord_glob_list) > 1:
+if len(cord_glob_list) > 1 and opts['default']:
     root = tk.Tk()
     root.withdraw()
 
@@ -194,7 +194,7 @@ if len(cord_glob_list) > 1:
     if cord_path == '':
         eprint('Did not provide a path for Coordination')
         exit(-5)
-elif len(cord_glob_list) == 0:
+elif len(cord_glob_list) == 0 and opts['default']:
     root = tk.Tk()
     root.withdraw()
 
@@ -202,7 +202,7 @@ elif len(cord_glob_list) == 0:
     if cord_path == '':
         eprint('Did not provide a path for Coordination')
         exit(-6)
-else:
+elif opts['default']:
     cord_path = cord_glob_list[0]
 
 # ######### PDF Output Name Checking ######### #
@@ -241,7 +241,7 @@ if recc_pdf_exists:
 # in the front. If the Coordination pdf is less than the Base or Recc, these are missing, or there was another error
 if cord_pdf.getNumPages() < base_pdf.getNumPages():
     eprint('Coordination PDF is shorter than the Base/Recc PDFs')
-    exit()
+    exit(-7)
 
 # Find the difference in length of the PDFs, these are the leader pages of the coordination
 diff_length = cord_pdf.getNumPages() - base_pdf.getNumPages()
@@ -293,6 +293,6 @@ else:
 # Finally, output everything to the PDF
 # The output name is chosen based on what the name of the coordination file is
 output_name = "8.0 - Coordination Results & Recommendations_" + output_name + "2018_NEW.pdf"
-output_name = os.path.join(os.getcwd(), 'PDF', output_name)
+output_name = os.path.join(os.path.dirname(os.path.abspath(cord_path)), output_name)
 with open(output_name, "wb") as w:
     output.write(w)
