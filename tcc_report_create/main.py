@@ -253,7 +253,7 @@ else:
 
 # Finally, output everything to the PDF
 # The output name is chosen based on what the name of the coordination file is
-output_name = "8.0 - Coordination Results & Recommendations_" + output_name + "2018.pdf"
-# output_name = os.path.join(os.getcwd(), 'PDF', output_name)
+output_name = "8.0 - Coordination Results & Recommendations_" + output_name + "2018_NEW.pdf"
+output_name = os.path.join(os.getcwd(), 'PDF', output_name)
 with open(output_name, "wb") as w:
     output.write(w)
