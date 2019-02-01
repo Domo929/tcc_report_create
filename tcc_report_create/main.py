@@ -5,16 +5,64 @@ from __future__ import print_function
 import argparse
 import glob
 import os
+import re
 import sys
+from io import StringIO
 
 from PyPDF3 import PdfFileWriter, PdfFileReader
-
-from tcc_report_create.helpers import *
+from pdfminer3.converter import TextConverter
+from pdfminer3.layout import LAParams
+from pdfminer3.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer3.pdfpage import PDFPage
 
 
 # ######### ERROR HElPER ######### #
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
+
+
+def pdf_pages_to_list_of_strings(pdf_path):
+    pdf = open(pdf_path, 'rb')
+    rsrcmgr = PDFResourceManager()
+    retstr = StringIO()
+    codec = 'utf-8'
+    laparams = LAParams()
+    device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
+    # Create a PDF interpreter object.
+    interpreter = PDFPageInterpreter(rsrcmgr, device)
+    # Process each page contained in the document.
+
+    pages_text = []
+
+    pdf_pages = PDFPage.get_pages(pdf)
+
+    for page in pdf_pages:
+        # Get (and store) the "cursor" position of stream before reading from PDF
+        # On the first page, this will be zero
+        read_position = retstr.tell()
+
+        # Read PDF page, write text into stream
+        interpreter.process_page(page)
+
+        # Move the "cursor" to the position stored
+        retstr.seek(read_position, 0)
+
+        # Read the text (from the "cursor" to the end)
+        page_text = retstr.read()
+
+        # Add this page's text to a convenient list
+        pages_text.append(page_text)
+
+    return pages_text
+
+
+def find_matching_page(name, pdf_pages, regex):
+    for page_num, page in enumerate(pdf_pages, start=0):
+        matches = re.finditer(regex, page, re.MULTILINE)
+        for match in matches:
+            if match.group(2) == name:
+                return page_num
+    return 0
 
 
 # ######### ARGUMENT HANDLER ######### #
@@ -146,7 +194,7 @@ if recc_pdf_exists:
 # They should be the same length
 if recc_pdf_exists:
     if base_pdf.getNumPages() != recc_pdf.getNumPages():
-        eprint('Number of pages does not match in the Base and Recommended PDFs')
+        eprint('Number of pages does not tcc_matches in the Base and Recommended PDFs')
         exit()
 
 # Check that the coordination PDF is longer than the base (and therefore recc) pdf too.
@@ -182,13 +230,13 @@ if opts['matching']:
 
     for ii in range(diff_length, len(cord_str_pages)):
         output.addPage(cord_pdf.getPage(ii))
-        matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
-        for match_num, match in enumerate(matches, start=1):
+        tcc_matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
+        for match_num, tcc_match in enumerate(tcc_matches, start=1):
             recc_num = 0
             if recc_pdf_exists:
-                recc_num = find_matching_page(match.group(2), recc_str_pages, regex_base_recc)
-            print("Attempting to find: " + match.group(2))
-            base_num = find_matching_page(match.group(2), base_str_pages, regex_base_recc)
+                recc_num = find_matching_page(tcc_match.group(2), recc_str_pages, regex_base_recc)
+            print("Attempting to find: " + tcc_match.group(2))
+            base_num = find_matching_page(tcc_match.group(2), base_str_pages, regex_base_recc)
             print("Found on base page: " + str(base_num))
             if base_num > 0:
                 output.addPage(base_pdf.getPage(base_num))
@@ -206,5 +254,6 @@ else:
 # Finally, output everything to the PDF
 # The output name is chosen based on what the name of the coordination file is
 output_name = "8.0 - Coordination Results & Recommendations_" + output_name + "2018.pdf"
+# output_name = os.path.join(os.getcwd(), 'PDF', output_name)
 with open(output_name, "wb") as w:
     output.write(w)
