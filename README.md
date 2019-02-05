@@ -57,5 +57,15 @@ If the file has a space in the name, wrap the entire path to the file in `" "`, 
 
 You can use `/` instead of the normal windows separator `\ ` without issue.
 
-### Note: Coordination file name
+## Matching
+
+If you want to zip the files together by checking and comparing TCC names you have to specify the `--matching` (`-m`) 
+command. This will take significantly longer, but should fix issues with out-of-order files. 
+
+## Notes
+### Matching
+For the matching to work correctly, TCC names must match EXACTLY, down to the `_` and `-` used. Please verify they match 
+between scenarios.   
+
+### Coordination file name
 The Coordination file can be flagged with a 'CE' or 'RH' in the file name. Whichever name the file has, will be matched in the output file name. 

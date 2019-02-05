@@ -135,6 +135,12 @@ if not (opts['default'] or opts['cord_path']):
 
         already_selected = True
 
+    root = tk.Tk()
+    root.withdraw()
+    result = messagebox.askyesno(title='Perform TCC Name matching?',
+                                 message='Warning: This will take longer than the zipper method')
+    opts['matching'] = True if result == 'yes' else False
+
 if opts['default']:
     root = tk.Tk()
     root.withdraw()
@@ -227,7 +233,7 @@ if len(cord_glob_list) > 1 and opts['default']:
     root = tk.Tk()
     root.withdraw()
 
-    cord_path = filedialog.askopenfilename(title='Choose preferred Coordination File')
+    cord_path = filedialog.askopenfilename(title='More than one Coordination file found. Choose preferred')
     if cord_path == '':
         eprint('Did not provide a path for Coordination')
         exit(-5)
@@ -287,6 +293,10 @@ diff_length = cord_pdf.getNumPages() - base_pdf.getNumPages()
 
 # Open the output file writer
 output = PdfFileWriter()
+
+for ii in range(diff_length):
+    output.addPage(cord_pdf.getPage(ii))
+
 
 if opts['matching']:
     print("Converting Coordination PDF to string")
