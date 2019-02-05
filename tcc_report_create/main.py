@@ -172,18 +172,21 @@ if rec_pdf_exists:
 
         rec_path = filedialog.askopenfilename(title='Choose preferred Rec TCC File')
         if rec_path == '':
-            eprint('Did not provide a path for Base')
-            exit(-3)
+            eprint('Did not provide a path for Rec')
+            rec_pdf_exists = False
     elif len(rec_glob_list) == 0 and opts['default']:
         root = tk.Tk()
         root.withdraw()
 
         rec_path = filedialog.askopenfilename(title='Choose preferred Rec TCC File')
         if rec_path == '':
-            eprint('Did not provide a path for Base')
-            exit(-4)
+            eprint('Did not provide a path for Rec')
+            rec_pdf_exists = False
     elif opts['default']:
         rec_path = rec_glob_list[0]
+        if rec_path == '':
+            eprint('Could not find Rec TCC from path defaults')
+            rec_pdf_exists = False
 
 # Finally, the same checks happen for the coordination file
 
