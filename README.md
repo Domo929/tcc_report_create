@@ -23,7 +23,7 @@ There are currently two methods to use for this program.
 
 ### Method #0 - Using file prompts
 
-If you just run the python file without any commandline arguments, it will prompt you for the mode and files.
+If you just run the `TCC_Report_Create.py` file without any commandline arguments, it will prompt you for the mode and files.
 
 ### Method #1 - `default` flag. 
 
