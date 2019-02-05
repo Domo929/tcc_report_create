@@ -148,8 +148,8 @@ if opts['default']:
     cwd = filedialog.askdirectory(title='Please choose the root of the TCC folders')
 
     # This allows us to find files that have different versions
-    base_glob = 'TCC-Base_v*.pdf'
-    rec_glob = 'TCC-Rec_v*.pdf'
+    base_glob = 'TCC?Base?v*.pdf'
+    rec_glob = 'TCC?Rec?v*.pdf'
     cord_glob = '*Coordination*.pdf'
 
     # Build the full path in order to start searching
@@ -241,7 +241,7 @@ elif len(cord_glob_list) == 0 and opts['default']:
     root = tk.Tk()
     root.withdraw()
 
-    cord_path = filedialog.askopenfilename(title='Choose preferred Coordination File')
+    cord_path = filedialog.askopenfilename(title='No Coordination file found. Choose a file')
     if cord_path == '':
         eprint('Did not provide a path for Coordination')
         exit(-6)
