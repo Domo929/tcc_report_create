@@ -1,0 +1,2 @@
+PyPDF3
+pdfminer3

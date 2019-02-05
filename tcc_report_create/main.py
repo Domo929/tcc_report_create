@@ -101,26 +101,45 @@ cord_glob_list = []
 rec_glob_list = []
 base_glob_list = []
 rec_pdf_exists = False
+already_selected = False
 
-# If the default flag was not selected
-if not opts['default']:
-    # Fill the paths. If they weren't provided they will be null
-    cord_path = opts['cord_path']
-    base_path = opts['base_path']
-    rec_path = opts['rec_path']
-    rec_pdf_exists = True
+if not (opts['default'] or opts['cord_path']):
+    # If default WAS selected
+    root = tk.Tk()
+    root.withdraw()
+    result = messagebox.askquestion('Mode selection', 'Do you want to use default mode?')
+    if result == 'yes':
+        opts['default'] = True
+    else:
+        root = tk.Tk()
+        root.withdraw()
 
-    # Check that if default was NOT selected, we are provided with the proper file flags
-    if not (cord_path and base_path):
-        eprint('Didn\'t specify default, but also didn\'t give all the individual flags',
-               'Either provide all three "--EXMP_path" flags OR the "--default" flag')
-        exit()
+        cord_path = filedialog.askopenfilename(title='Choose preferred Coordination TCC File')
+        if cord_path == '':
+            eprint('Did not provide a path for Coordination')
+            exit(-1)
 
-# If default WAS selected
-else:
-    # Get the current working directory. This allows the script to be called from wherever,
-    # and find the files correctly
-    cwd = os.getcwd()
+        root = tk.Tk()
+        root.withdraw()
+
+        base_path = filedialog.askopenfilename(title='Choose preferred Base TCC File')
+        if base_path == '':
+            eprint('Did not provide a path for Base')
+            exit(-1)
+
+        root = tk.Tk()
+        root.withdraw()
+
+        rec_path = filedialog.askopenfilename(title='Choose preferred Rec TCC File')
+        rec_pdf_exists = bool(rec_path)
+
+        already_selected = True
+
+if opts['default']:
+    root = tk.Tk()
+    root.withdraw()
+
+    cwd = filedialog.askdirectory(title='Please choose the root of the TCC folders')
 
     # This allows us to find files that have different versions
     base_glob = 'TCC-Base_v*.pdf'
@@ -138,6 +157,20 @@ else:
     cord_glob_list = glob.glob(cord_path)
 
     rec_pdf_exists = len(rec_glob_list) > 0
+
+# If the default flag was not selected
+elif not already_selected:
+    # Fill the paths. If they weren't provided they will be null
+    cord_path = opts['cord_path']
+    base_path = opts['base_path']
+    rec_path = opts['rec_path']
+    rec_pdf_exists = True
+
+    # Check that if default was NOT selected, we are provided with the proper file flags
+    if not (cord_path and base_path):
+        eprint('Didn\'t specify default, but also didn\'t give all the individual flags',
+               'Either provide all three "--FILE_path" flags OR the "--default" flag')
+        exit()
 
 # If there is more than one, ask them to remove the extra
 if len(base_glob_list) > 1 and opts['default']:
@@ -161,9 +194,9 @@ elif len(base_glob_list) == 0 and opts['default']:
 elif opts['default']:
     base_path = base_glob_list[0]
 
-if not rec_pdf_exists:
-    rec_pdf_exists = messagebox.askyesno('Recommended TCC?',
-                                         'Is there a missing Recommended TCC you would like to use?')
+# if not rec_pdf_exists:
+#     rec_pdf_exists = messagebox.askyesno('Recommended TCC?',
+#                                          'Is there a missing Recommended TCC you would like to use?')
 
 if rec_pdf_exists:
     if len(rec_glob_list) > 1 and opts['default']:
