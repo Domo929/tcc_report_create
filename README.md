@@ -4,7 +4,7 @@
 ## Installation
 Navigate to the [Python Downloads Page](https://www.python.org/downloads/) 
 
-Install the latest `3.7.x` version. Make sure that `install pip` is selected in custom install, or use the default install.
+Install the latest `3.7.x` version. Make sure `Add Python to PATH` is selected.
 Leave the default install location alone, Python has issues if you install it in other locations you don't own. 
 
 Open up the commandline (`cmd`) and run `python --version`. It should return `3.7.x`
