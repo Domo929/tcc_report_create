@@ -219,14 +219,7 @@ def pdf_selection(opts):
     return cord_path, base_path, rec_path, rec_pdf_exists
 
 
-def main():
-    opts = argument_handler()
-    # ######### PATH HANDLING ######### #
-    # Empty paths to be filled depending on the mode chosen (default or otherwise)
-    cord_path, base_path, rec_path, rec_pdf_exists = pdf_selection(opts)
-
-    # ######### PDF Output Name Checking ######### #
-    # Empty string to hold it all
+def output_name_selector(cord_path):
     output_name = ''
     # This splits the total file path into the list of drive, directory and at the end the file name
     paths = cord_path.split(os.sep)
@@ -241,6 +234,10 @@ def main():
     else:
         output_name = ''
 
+    return output_name
+
+
+def zipper(cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching):
     # ######### PDF Write Setup ######### #
     # Open the input PDFs
     cord_pdf = PdfFileReader(open(cord_path, 'rb'), False)
@@ -265,16 +262,12 @@ def main():
 
     # Find the difference in length of the PDFs, these are the leader pages of the coordination
     diff_length = cord_pdf.getNumPages() - base_pdf.getNumPages()
-
-    # ######### ZIPPING ######### #
-
-    # Open the output file writer
     output = PdfFileWriter()
 
     for ii in range(diff_length):
         output.addPage(cord_pdf.getPage(ii))
 
-    if opts['matching']:
+    if matching:
         print("Converting Coordination PDF to string")
         cord_str_pages = pdf_pages_to_list_of_strings(cord_path)
 
@@ -319,6 +312,22 @@ def main():
     output_name = os.path.join(os.path.dirname(os.path.abspath(cord_path)), output_name)
     with open(output_name, "wb") as w:
         output.write(w)
+
+
+def main():
+    # ######### Argument Handling ######### #
+    opts = argument_handler()
+
+    # ######### Path Handling ######### #
+    cord_path, base_path, rec_path, rec_pdf_exists = pdf_selection(opts)
+
+    # ######### PDF Output Name Selection ######### #
+    output_name = output_name_selector(cord_path)
+
+    matching = opts['matching']
+
+    # ######### PDF Write Setup ######### #
+    zipper(cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching)
 
 
 if __name__ == '__main__':
