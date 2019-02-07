@@ -68,4 +68,9 @@ For the matching to work correctly, TCC names must match EXACTLY, down to the `_
 between scenarios.   
 
 ### Coordination file name
-The Coordination file can be flagged with a 'CE' or 'RH' in the file name. Whichever name the file has, will be matched in the output file name. 
+The Coordination file can be flagged with a 'CE' or 'RH' in the file name. Whichever name the file has, will be matched
+ in the output file name. 
+
+### Logging
+The log of the most recent run will be saved to the `TCC_Create_Logs.log` 
+file in the same directory as `TCC_Report_Create.py`.
