@@ -17,7 +17,6 @@ Then, run `pip3 install -r requirements.txt`. This should return no errors.
 
 From here, you can run the script as normal
 
-
 ## Usage
 There are currently two methods to use for this program.
 

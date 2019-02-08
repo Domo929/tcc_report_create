@@ -31,9 +31,6 @@ logging_name = 'TCC_Zipper'
 logger = logging.getLogger(logging_name)
 
 
-# logger.addFilter(OnlyZipperLogging())
-
-
 # ######### ERROR HElPER ######### #
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -74,15 +71,15 @@ def pdf_pages_to_list_of_strings(pdf_path):
     return pages_text
 
 
-def find_matching_page(name, pdf_pages, regex):
+def find_matching_page(name, pdf_pages, regex, which_pdf):
     for page_num, page in enumerate(pdf_pages, start=0):
         matches = re.finditer(regex, page, re.MULTILINE)
         for match in matches:
             if match.group(2) == name:
                 return page_num
 
-    logger.warning('Unable to find a match for %s', name)
-    return 0
+    logger.warning('Unable to find a match for %s in %s', name, which_pdf)
+    return -1
 
 
 # ######### ARGUMENT HANDLER ######### #
@@ -330,38 +327,44 @@ def zipper(cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching
         output.addPage(cord_pdf.getPage(ii))
 
     if matching:
-        logging.disable(logging.INFO)
+
         logger.info("Converting Coordination PDF to string")
+        logging.disable(logging.INFO)
         cord_str_pages = pdf_pages_to_list_of_strings(cord_path)
+        logging.disable(logging.NOTSET)
 
         logger.info("Converting Base PDF to string")
+        logging.disable(logging.INFO)
         base_str_pages = pdf_pages_to_list_of_strings(base_path)
+        logging.disable(logging.NOTSET)
 
         rec_str_pages = []
         if rec_pdf_exists:
+            logging.disable(logging.INFO)
             logger.info("Converting Recommended PDF to string")
             rec_str_pages = pdf_pages_to_list_of_strings(rec_path)
+            logging.disable(logging.NOTSET)
 
-        logging.disable(logging.NOTSET)
-        # regex_cord = re.compile(r"\bTCC_\*")
-        regex_cord = r"(TCC Curve: )(TCC_[\w/ \[\]\"-]+)"
-        regex_base_rec = r"(TCC Name: )(TCC_[\w/ \[\]\"-]+)"
+        regex_cord = r"(TCC Curve: )(TCC_[\d]+([\w]+[_-]*)*)"
+        regex_base_rec = r"(TCC Name: )(TCC_[\d]+([\w]+[_-]*)*)"
 
         for ii in range(diff_length, len(cord_str_pages)):
             output.addPage(cord_pdf.getPage(ii))
             tcc_matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
 
             for match_num, tcc_match in enumerate(tcc_matches, start=1):
+                logger.info("Attempting to find: " + tcc_match.group(2))
+                base_num = find_matching_page(tcc_match.group(2), base_str_pages, regex_base_rec, 'Base PDF')
+                if base_num != -1:
+                    logger.info('Found on base page: %s', str(base_num))
                 rec_num = 0
                 if rec_pdf_exists:
-                    rec_num = find_matching_page(tcc_match.group(2), rec_str_pages, regex_base_rec)
-                logger.info("Attempting to find: " + tcc_match.group(2))
-                base_num = find_matching_page(tcc_match.group(2), base_str_pages, regex_base_rec)
-                logger.info('Found on base page: %s', str(base_num))
+                    rec_num = find_matching_page(tcc_match.group(2), rec_str_pages, regex_base_rec, 'Rec PDF')
+                    if rec_num != -1:
+                        logger.info('Found on rec page: %s', str(rec_num))
                 if base_num > 0:
                     output.addPage(base_pdf.getPage(base_num))
                     if rec_num > 0:
-                        logger.info('Found on rec page: %s', str(rec_num))
                         output.addPage(rec_pdf.getPage(rec_num))
                     break
     else:
@@ -390,7 +393,7 @@ def do_matching_check(opts):
         root.withdraw()
 
         ret_val = messagebox.askyesno(title='Do you want to perform matching?',
-                                      message='Matches by TCC title. Takes a long time')
+                                      message='Matches by TCC title. Takes a little longer')
 
     if ret_val:
         logger.info('Matching option chosen')
