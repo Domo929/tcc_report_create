@@ -12,3 +12,5 @@ DONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONE
 
 See if you can create/edit bookmarks in a PDF to have a specified zoom level.
 A script that can combine all the report files into one, with bookmarks created for the first page location of each file in the master file, bookmark name being the file name with out the extension or _RH/CE2018.
+
+Give choice for output file

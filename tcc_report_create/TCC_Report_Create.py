@@ -106,6 +106,10 @@ def argument_handler():
     parser.add_argument('-m', '--matching',
                         action='store_true',
                         help='Whether or not to trigger the TCC name matching method of combining')
+    parser.add_argument('-o', '--output',
+                        action='store',
+                        help='Use to specify the output file path and location',
+                        type=str)
     # Store the arguments in a dict for easy reference later
     opts = vars(parser.parse_args())
     if bool(opts['default']) and bool(opts['cord_path']):
@@ -302,7 +306,7 @@ def output_name_selector(cord_path):
     return output_name
 
 
-def zipper(cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching):
+def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching):
     # ######### PDF Write Setup ######### #
     # Open the input PDFs
     cord_pdf = PdfFileReader(open(cord_path, 'rb'), False)
@@ -380,8 +384,11 @@ def zipper(cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching
 
     # Finally, output everything to the PDF
     # The output name is chosen based on what the name of the coordination file is
-    output_name = "8.0 - Coordination Results & Recommendations_" + output_name + "2018_NEW.pdf"
-    output_name = os.path.join(os.path.dirname(os.path.abspath(cord_path)), output_name)
+    if opts['output']:
+        output_name = opts['output']
+    else:
+        output_name = "8.0 - Coordination Results & Recommendations_" + output_name + "2018_NEW.pdf"
+        output_name = os.path.join(os.path.dirname(os.path.abspath(cord_path)), output_name)
     with open(output_name, "wb") as w:
         output.write(w)
 
@@ -438,7 +445,7 @@ def main():
     matching = do_matching_check(opts)
 
     # ######### PDF Write Setup ######### #
-    zipper(cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching)
+    zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching)
 
 
 if __name__ == '__main__':
