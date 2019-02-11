@@ -1,0 +1,14 @@
+I thought of a use case for a letter I the TCC number area…
+Would changing the glob to add a single letter at the end of the number be possible? 
+Ie TCC_0127A_ and TCC_0127B_ might be used.
+
+
+DONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONE
+The text to match for when a recommended scenario will be present should be,
+“the following settings changes”
+“TCC shows the effect of recommendations made”
+If possible, perhaps make the glob list something where it’s easy to add future strings?
+DONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONEDONE
+
+See if you can create/edit bookmarks in a PDF to have a specified zoom level.
+A script that can combine all the report files into one, with bookmarks created for the first page location of each file in the master file, bookmark name being the file name with out the extension or _RH/CE2018.
