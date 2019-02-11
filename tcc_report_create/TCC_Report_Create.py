@@ -18,6 +18,9 @@ from pdfminer3.layout import LAParams
 from pdfminer3.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer3.pdfpage import PDFPage
 
+check_for_rec_list = ['the following settings changes',
+                      'TCC shows the effect of recommendations made']
+
 
 class OnlyZipperLogging(logging.Filter):
     def filter(self, record):
@@ -357,8 +360,9 @@ def zipper(cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching
                 base_num = find_matching_page(tcc_match.group(2), base_str_pages, regex_base_rec, 'Base PDF')
                 if base_num != -1:
                     logger.info('Found on base page: %s', str(base_num))
+                rec_page_flag = check_for_rec(cord_str_pages[ii])
                 rec_num = 0
-                if rec_pdf_exists:
+                if rec_pdf_exists and rec_page_flag:
                     rec_num = find_matching_page(tcc_match.group(2), rec_str_pages, regex_base_rec, 'Rec PDF')
                     if rec_num != -1:
                         logger.info('Found on rec page: %s', str(rec_num))
@@ -407,6 +411,13 @@ def valid_tcc_name(tcc_name):
     valid_tcc_name_pattern = re.compile(r'TCC_[\d]+_[\w/ \[\]\"-]+')
     if not valid_tcc_name_pattern.match(tcc_name):
         logger.critical('Invalid TCC Name: %s', tcc_name)
+
+
+def check_for_rec(cord_str_page):
+    for tag in check_for_rec_list:
+        if tag in cord_str_page:
+            return True
+    return False
 
 
 def main():
