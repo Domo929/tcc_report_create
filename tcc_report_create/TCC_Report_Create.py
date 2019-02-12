@@ -442,7 +442,8 @@ def main():
         log_base_path = opts['logging']
     else:
         log_base_path = os.path.dirname(os.path.realpath(__file__))
-        os.mkdir(os.path.join(log_base_path, 'Logs'))
+        if not os.path.isdir('Logs'):
+            os.mkdir(os.path.join(log_base_path, 'Logs'))
         log_base_path = os.path.join(log_base_path, 'Logs', 'TCC_Create_Logs.log')
 
     logging.basicConfig(filename=log_base_path,
