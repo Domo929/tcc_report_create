@@ -110,6 +110,9 @@ def argument_handler():
                         action='store',
                         help='Use to specify the output file path and location',
                         type=str)
+    parser.add_argument('-w', '--warning',
+                        action='store_true',
+                        help='Flag to only log warnings, ignore normal info logs')
     # Store the arguments in a dict for easy reference later
     opts = vars(parser.parse_args())
     if bool(opts['default']) and bool(opts['cord_path']):
@@ -352,8 +355,8 @@ def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, ma
             rec_str_pages = pdf_pages_to_list_of_strings(rec_path)
             logging.disable(logging.NOTSET)
 
-        regex_cord = r"(TCC Curve: )(TCC_[\d]+([\w]+[_-]*)*)"
-        regex_base_rec = r"(TCC Name: )(TCC_[\d]+([\w]+[_-]*)*)"
+        regex_cord = r"(TCC Curve: )(TCC_[\d]+[\w]?([\w]+[_-]*)*)"
+        regex_base_rec = r"(TCC Name: )(TCC_[\d]+[\w]?([\w]+[_-]*)*)"
 
         for ii in range(diff_length, len(cord_str_pages)):
             output.addPage(cord_pdf.getPage(ii))
@@ -428,13 +431,23 @@ def check_for_rec(cord_str_page):
 
 
 def main():
-    logging.basicConfig(filename='TCC_Create_Logs.log',
-                        level=logging.INFO,
-                        format='%(levelname)s|%(name)s|%(message)s',
-                        filemode='w')
-
     # ######### Argument Handling ######### #
     opts = argument_handler()
+
+    logging_level = ''
+    if opts['warning']:
+        logging_level = logging.WARNING
+    else:
+        logging_level = logging.INFO
+
+    log_base_path = os.path.dirname(os.path.realpath(__file__))
+    os.mkdir('Logs')
+    log_base_path = os.path.join(log_base_path, 'Logs', 'TCC_Create_Logs.log')
+
+    logging.basicConfig(filename=log_base_path,
+                        level=logging_level,
+                        format='%(levelname)s|%(name)s|%(message)s',
+                        filemode='w')
 
     # ######### Path Handling ######### #
     cord_path, base_path, rec_path, rec_pdf_exists = pdf_selection(opts)
