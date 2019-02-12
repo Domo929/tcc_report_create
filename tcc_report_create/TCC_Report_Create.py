@@ -354,8 +354,8 @@ def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, ma
             rec_str_pages = pdf_pages_to_list_of_strings(rec_path)
             logging.disable(logging.NOTSET)
 
-        regex_cord = r'(TCC Curve: )(TCC_[\d]+[\w]?[-_#$\w\d\[\]]*)'
-        regex_base_rec = r'(TCC Name: )(TCC_[\d]+[\w]?[-_#$\w\d\[\]]*)'
+        regex_cord = r'(TCC Curve: )(TCC_[\d]+[\w]?[-_#$\w\d\[\] ]*)'
+        regex_base_rec = r'(TCC Name: )(TCC_[\d]+[\w]?[-_#$\w\d\[\] ]*)'
 
         for ii in range(diff_length, len(cord_str_pages)):
             output.addPage(cord_pdf.getPage(ii))
