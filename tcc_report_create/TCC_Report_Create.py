@@ -21,15 +21,6 @@ from pdfminer3.pdfpage import PDFPage
 check_for_rec_list = ['the following settings changes',
                       'TCC shows the effect of recommendations made']
 
-
-class OnlyZipperLogging(logging.Filter):
-    def filter(self, record):
-        if record.name == logging_name:
-            return 1
-        else:
-            return 0
-
-
 logging_name = 'TCC_Zipper'
 logger = logging.getLogger(logging_name)
 
@@ -113,6 +104,10 @@ def argument_handler():
     parser.add_argument('-w', '--warning',
                         action='store_true',
                         help='Flag to only log warnings, ignore normal info logs')
+    parser.add_argument('-l', '--logging',
+                        action='store',
+                        help='Specify path of the logging file',
+                        type=str)
     # Store the arguments in a dict for easy reference later
     opts = vars(parser.parse_args())
     if bool(opts['default']) and bool(opts['cord_path']):
@@ -205,6 +200,10 @@ def default_mode(path):
     cord_path = glob_checker(cord_glob_list, 'Coordination')
     rec_path, rec_pdf_exists = rec_glob_checker(rec_glob_list)
 
+    if not cord_path or not base_path:
+        logging.warning('Unable to find necessary PDF. Exiting')
+        exit(-1)
+
     return cord_path, base_path, rec_path, rec_pdf_exists
 
 
@@ -242,7 +241,7 @@ def manual_mode():
     return cord_path, base_path, rec_path, rec_pdf_exists
 
 
-def pdf_selection(opts):
+def pdf_selection_via_mode(opts):
     base_path = ''
     rec_path = ''
     cord_path = ''
@@ -434,15 +433,17 @@ def main():
     # ######### Argument Handling ######### #
     opts = argument_handler()
 
-    logging_level = ''
     if opts['warning']:
         logging_level = logging.WARNING
     else:
         logging_level = logging.INFO
 
-    log_base_path = os.path.dirname(os.path.realpath(__file__))
-    os.mkdir('Logs')
-    log_base_path = os.path.join(log_base_path, 'Logs', 'TCC_Create_Logs.log')
+    if opts['logging']:
+        log_base_path = opts['logging']
+    else:
+        log_base_path = os.path.dirname(os.path.realpath(__file__))
+        os.mkdir(os.path.join(log_base_path, 'Logs'))
+        log_base_path = os.path.join(log_base_path, 'Logs', 'TCC_Create_Logs.log')
 
     logging.basicConfig(filename=log_base_path,
                         level=logging_level,
@@ -450,7 +451,7 @@ def main():
                         filemode='w')
 
     # ######### Path Handling ######### #
-    cord_path, base_path, rec_path, rec_pdf_exists = pdf_selection(opts)
+    cord_path, base_path, rec_path, rec_pdf_exists = pdf_selection_via_mode(opts)
 
     # ######### PDF Output Name Selection ######### #
     output_name = output_name_selector(cord_path)
