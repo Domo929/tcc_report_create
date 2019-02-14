@@ -429,7 +429,7 @@ def check_for_rec(cord_str_page):
         if tag in cord_str_page:
             logger.info('Found Rec phrase in Coordination')
             return True
-    logger.warning('Unable to find Rec phrase in Coordination')
+    logger.info('Unable to find Rec phrase in Coordination')
     return False
 
 
