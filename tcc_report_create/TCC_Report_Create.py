@@ -95,6 +95,10 @@ def argument_handler():
                         action='store',
                         help='The path to the Recommended TCC PDF',
                         type=str)
+    parser.add_argument('-e', '--empty_path',
+                        action='store',
+                        help='The path to the empty file that will be inserted if a recommended page cant be found',
+                        type=str)
     parser.add_argument('-m', '--matching',
                         action='store_true',
                         help='Whether or not to trigger the TCC name matching method of combining')
@@ -191,6 +195,7 @@ def default_mode(path):
     cord_path = os.path.join(path, 'PDF', cord_glob)
     base_path = os.path.join(path, 'TCCs', base_glob)
     rec_path = os.path.join(path, 'TCCs', rec_glob)
+    empty_path = os.path.join(path, 'PDF', '_INITIAL TCC_Blank_Page.pdf')
 
     # Build the list of all possible matches to the glob
     base_glob_list = glob.glob(base_path)
@@ -205,7 +210,7 @@ def default_mode(path):
         logging.warning('Unable to find necessary PDF. Exiting')
         exit(-1)
 
-    return cord_path, base_path, rec_path, rec_pdf_exists
+    return cord_path, base_path, rec_path, rec_pdf_exists, empty_path
 
 
 def manual_mode():
@@ -239,7 +244,14 @@ def manual_mode():
         rec_pdf_exists = False
         logger.info('No Recommended PDF selected')
 
-    return cord_path, base_path, rec_path, rec_pdf_exists
+    empty_path = filedialog.askopenfilename(title='Locate the TCC_Blank_Page.pdf file')
+    if empty_path == '':
+        prompt = 'Did not provide a path for TCC File'
+        eprint(prompt)
+        logger.critical(prompt)
+        exit(-1)
+
+    return cord_path, base_path, rec_path, rec_pdf_exists, empty_path
 
 
 def pdf_selection_via_mode(opts):
@@ -247,6 +259,7 @@ def pdf_selection_via_mode(opts):
     rec_path = ''
     cord_path = ''
     rec_pdf_exists = False
+    empty_path = ''
 
     if bool(opts['default']) and not bool(opts['cord_path']):
         logger.info('Default mode selected')
@@ -255,7 +268,7 @@ def pdf_selection_via_mode(opts):
 
         cwd = filedialog.askdirectory(title='Please choose the root of the TCC folders')
 
-        cord_path, base_path, rec_path, rec_pdf_exists = default_mode(cwd)
+        cord_path, base_path, rec_path, rec_pdf_exists, empty_path = default_mode(cwd)
 
     elif bool(opts['cord_path']) and not bool(opts['default']):
         logger.info('Manual mode selected')
@@ -263,6 +276,7 @@ def pdf_selection_via_mode(opts):
         base_path = opts['base_path']
         rec_path = opts['rec_path']
         rec_pdf_exists = bool(rec_path)
+        empty_path = opts['empty_path']
 
         # Check that if default was NOT selected, we are provided with the proper file flags
         if not (bool(cord_path) and bool(base_path)):
@@ -280,14 +294,14 @@ def pdf_selection_via_mode(opts):
         if result:
             logger.info('Default mode chosen')
             path = filedialog.askdirectory(title='Please choose the root of the TCC Project Folder')
-            cord_path, base_path, rec_path, rec_pdf_exists = default_mode(path)
+            cord_path, base_path, rec_path, rec_pdf_exists, empty_path = default_mode(path)
         else:
             logger.info('Manual mode chosen')
-            cord_path, base_path, rec_path, rec_pdf_exists = manual_mode()
+            cord_path, base_path, rec_path, rec_pdf_exists, empty_path = manual_mode()
 
     logger.info('\nCord Path: %s\nBase Path: %s\nRec Path: %s\nRecPathExists: %s',
                 cord_path, base_path, rec_path, str(rec_pdf_exists))
-    return cord_path, base_path, rec_path, rec_pdf_exists
+    return cord_path, base_path, rec_path, rec_pdf_exists, empty_path
 
 
 def output_name_selector(cord_path):
@@ -309,7 +323,7 @@ def output_name_selector(cord_path):
     return output_name
 
 
-def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching):
+def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching, empty_path):
     # ######### PDF Write Setup ######### #
     # Open the input PDFs
     cord_pdf = PdfFileReader(open(cord_path, 'rb'), False)
@@ -317,7 +331,7 @@ def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, ma
     rec_pdf = ''
     if rec_pdf_exists:
         rec_pdf = PdfFileReader(open(rec_path, 'rb'), False)
-    blank_pdf = PdfFileReader(open('.blank.pdf', 'rb'), False)
+    empty_pdf = PdfFileReader(open(empty_path, 'rb'), False)
 
     # Check that the coordination PDF is longer than the base (and therefore rec) pdf too.
     # The Coordination PDF includes pages at the front that do not get sliced in, and instead actually sit
@@ -375,12 +389,12 @@ def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, ma
                     rec_num = find_matching_page(tcc_name, rec_str_pages, regex_base_rec, 'Rec PDF')
                     if rec_num != -1:
                         logger.info('Found on rec page: %s', str(rec_num))
+                    else:
+                        output.addPage(empty_pdf.getPage(0))
                 if base_num > 0:
                     output.addPage(base_pdf.getPage(base_num))
                     if rec_num > 0:
                         output.addPage(rec_pdf.getPage(rec_num))
-                    else:
-                        output.addPage(blank_pdf.getPage(0))
                     break
     else:
         for jj in range(base_pdf.getNumPages()):
@@ -459,7 +473,7 @@ def main():
                         filemode='w')
 
     # ######### Path Handling ######### #
-    cord_path, base_path, rec_path, rec_pdf_exists = pdf_selection_via_mode(opts)
+    cord_path, base_path, rec_path, rec_pdf_exists, empty_path = pdf_selection_via_mode(opts)
 
     # ######### PDF Output Name Selection ######### #
     output_name = output_name_selector(cord_path)
@@ -467,7 +481,7 @@ def main():
     matching = do_matching_check(opts)
 
     # ######### PDF Write Setup ######### #
-    zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching)
+    zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, matching, empty_path)
 
 
 if __name__ == '__main__':
