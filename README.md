@@ -18,7 +18,7 @@ Then, run `pip3 install -r requirements.txt`. This should return no errors.
 From here, you can run the script as normal
 
 ## Usage
-There are currently two methods to use for this program.
+There are currently three methods to use for this program.
 
 ### Method #0 - Using file prompts
 
@@ -73,3 +73,16 @@ The Coordination file can be flagged with a 'CE' or 'RH' in the file name. Which
 ### Logging
 The log of the most recent run will be saved to the `TCC_Create_Logs.log` 
 file in the same directory as `TCC_Report_Create.py`.
+
+### Coordination Phrases
+In order to find which pages have a recommended TCC attached, the script looks for certain phrases in the Coordination page. 
+These phrases are:
+
+```
+the following settings changes
+shows the effect of recommendations made
+revised TCC
+``` 
+
+So long as one of those standard phrases is used in completeness in the Coordination file, everything will work as needed. 
+If you want to add more phrases to the script, edit line `21` in `TCC_Report_Create.py`. 

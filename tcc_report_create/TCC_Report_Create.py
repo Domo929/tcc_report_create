@@ -19,7 +19,8 @@ from pdfminer3.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer3.pdfpage import PDFPage
 
 check_for_rec_list = ['the following settings changes',
-                      'TCC shows the effect of recommendations made']
+                      'shows the effect of recommendations made',
+                      'revised TCC']
 
 logging_name = 'TCC_Zipper'
 logger = logging.getLogger(logging_name)
@@ -284,7 +285,7 @@ def pdf_selection_via_mode(opts):
             logger.info('Manual mode chosen')
             cord_path, base_path, rec_path, rec_pdf_exists = manual_mode()
 
-    logger.info('Cord Path: %s\nBase Path: %s\nRec Path: %s\nRecPathExists: %s',
+    logger.info('\nCord Path: %s\nBase Path: %s\nRec Path: %s\nRecPathExists: %s',
                 cord_path, base_path, rec_path, str(rec_pdf_exists))
     return cord_path, base_path, rec_path, rec_pdf_exists
 
@@ -354,22 +355,23 @@ def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, ma
             rec_str_pages = pdf_pages_to_list_of_strings(rec_path)
             logging.disable(logging.NOTSET)
 
-        regex_cord = r'(TCC Curve: )(TCC_[\d]+[\w]?[-_#$\w\d\[\] ]*)'
-        regex_base_rec = r'(TCC Name: )(TCC_[\d]+[\w]?[-_#$\w\d\[\] ]*)'
+        regex_cord = r'(TCC Curve: )(TCC_[\d]+[a-zA-Z]?)([-_#$\w\d\[\] ]*)'
+        regex_base_rec = r'(TCC Name: )(TCC_[\d]+[a-zA-Z]?)([-_#$\w\d\[\] ]*)'
 
         for ii in range(diff_length, len(cord_str_pages)):
             output.addPage(cord_pdf.getPage(ii))
             tcc_matches = re.finditer(regex_cord, cord_str_pages[ii], re.MULTILINE)
 
             for match_num, tcc_match in enumerate(tcc_matches, start=1):
-                logger.info("Attempting to find: " + tcc_match.group(2))
-                base_num = find_matching_page(tcc_match.group(2), base_str_pages, regex_base_rec, 'Base PDF')
+                tcc_name = tcc_match.group(2)
+                logger.info("Attempting to find: " + tcc_name)
+                base_num = find_matching_page(tcc_name, base_str_pages, regex_base_rec, 'Base PDF')
                 if base_num != -1:
                     logger.info('Found on base page: %s', str(base_num))
                 rec_page_flag = check_for_rec(cord_str_pages[ii])
                 rec_num = 0
                 if rec_pdf_exists and rec_page_flag:
-                    rec_num = find_matching_page(tcc_match.group(2), rec_str_pages, regex_base_rec, 'Rec PDF')
+                    rec_num = find_matching_page(tcc_name, rec_str_pages, regex_base_rec, 'Rec PDF')
                     if rec_num != -1:
                         logger.info('Found on rec page: %s', str(rec_num))
                 if base_num > 0:
@@ -425,7 +427,9 @@ def valid_tcc_name(tcc_name):
 def check_for_rec(cord_str_page):
     for tag in check_for_rec_list:
         if tag in cord_str_page:
+            logger.info('Found Rec phrase in Coordination')
             return True
+    logger.warning('Unable to find Rec phrase in Coordination')
     return False
 
 
