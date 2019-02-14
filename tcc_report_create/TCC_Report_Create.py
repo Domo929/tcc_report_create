@@ -317,6 +317,7 @@ def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, ma
     rec_pdf = ''
     if rec_pdf_exists:
         rec_pdf = PdfFileReader(open(rec_path, 'rb'), False)
+    blank_pdf = PdfFileReader(open('.blank.pdf', 'rb'), False)
 
     # Check that the coordination PDF is longer than the base (and therefore rec) pdf too.
     # The Coordination PDF includes pages at the front that do not get sliced in, and instead actually sit
@@ -378,6 +379,8 @@ def zipper(opts, cord_path, base_path, rec_path, rec_pdf_exists, output_name, ma
                     output.addPage(base_pdf.getPage(base_num))
                     if rec_num > 0:
                         output.addPage(rec_pdf.getPage(rec_num))
+                    else:
+                        output.addPage(blank_pdf.getPage(0))
                     break
     else:
         for jj in range(base_pdf.getNumPages()):
